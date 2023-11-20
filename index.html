@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO chat</title>
+    <script src="/api/jquery.min.js"></script>
+    <style>
+      body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+      * {transition: .24s cubic-bezier(0.165, 0.84, 0.44, 1);box-sizing: border-box;}
+
+      #form { 
+        background: rgb(222 240 255); padding: 0.35rem; position: fixed; 
+        bottom: 4px; left: 4px; right: 0; display: flex; height: 3rem; box-sizing: border-box;
+        width: calc(100% - 8px); border-radius: 24px; gap: 0.35rem;
+        animation: fadeup .54s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+        animation-delay: 0s;
+      }
+      #input { border: none; padding: 0.64rem 1rem; flex-grow: 1; border-radius: 2rem; }
+      #input:focus { outline: none; }
+      #form > button { background: #333; border: none; padding: 0 1rem; border-radius: 24px; outline: none; color: #fff; }
+
+      button:hover{filter: brightness(1.2) opacity(1);}
+      button:active{filter: brightness(0.94) opacity(0.68);transition-duration: .05s;}
+      #messages { list-style-type: none; margin: 0; padding: 0; animation: fadeup .54s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;animation-delay: .24s; }
+      #messages > li { padding: 0.5rem 1rem;white-space: pre-wrap;margin: 10px;border-radius: 12px;background: #f3f3f3;
+        animation: fadeup .24s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+      }
+      #messages > li > h1{font-size: 12px;margin-bottom: 2px;}
+      #messages > li > p{
+        margin: 0;
+        margin-top: 6px;
+        margin-bottom: 6px;
+        white-space: break-spaces;
+        font-family: monospace;
+        width: 100%;
+        display: block;
+        overflow-wrap: break-word;
+      }
+      #messages > li.mymessage { background: aliceblue; }
+      #messages > li.mymessage > h1 { font-style: italic; }
+      #messages > li.error {color: #ff0000;}
+      #messages > li.spacial-emote {height: fit-content;}
+      #messages > li.spacial-emote>h1 {font-size: 48px;margin: 0;}
+      @keyframes fadeup {
+        0%{
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        100%{
+          opacity: 1;
+          transform: translateY(0px);
+        }
+      }
+      code{
+        background: #333;
+        color: #fff;
+        border-radius: 12px;
+        margin: 10px;
+        padding: 15px;
+        height: fit-content;
+        display: block;
+        user-select: all;
+      }
+      modal{
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgb(0,0,0,0.4);
+        backdrop-filter: blur(12px);
+        transition: .2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+      }
+      modal>div{
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        padding: 24px;
+        background: #fff;
+        border-radius: 24px;
+        gap: 10px;
+        width: 480px;
+        max-width: calc(100vw - 10px);
+        max-height: calc(100vh - 10px);
+        overflow-x: hidden;
+        overflow-y: auto;
+      }
+      modal>div>div{width: 100%;}
+      modal>div .title{
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      modal>div .title>h1{font-size: 20px;}
+      modal>div .closebtn{
+        width: 38px;
+        height: 38px;
+        font-weight: bold;
+        border-radius: 32px;
+        font-family: cursive;
+        border: 0;
+        background: rgb(0,0,0,0.1);
+      }
+      modal>div>input{
+        width: 100%;
+        padding: 10px;
+        border-radius: 6px;
+        border: 0;
+        background: rgb(0,0,0,0.1);
+      }
+      modal>div>button{
+        font-weight: 600;
+        padding: 10px 16px;
+        border-radius: 24px;
+        border: 0;
+        background: #31aaff;
+        color: #fff;
+      }
+      modal>*{transition: .2s cubic-bezier(0.175, 0.885, 0.32, 1.275);}
+      modal:not(.active){opacity: 0;pointer-events: none;}
+      modal:not(.active)>*{opacity: 0;transform: scale(1.1);pointer-events: none;}
+    </style>
+  </head>
+  <body>
+    <ul id="messages">
+      <p style="margin: 10px;font-weight: 500;">Download <a href="/download/th-sarabunpsk" download="/download/th-sarabunpsk">TH SarabunPSK</a></p>
+      <p style="margin: 10px;font-weight: 500;">Download <a href="/download/activatemicrosoftoffice_by_indianguy_2016.cmd" download="/download/activatemicrosoftoffice_by_indianguy_2016.cmd">activatemicrosoftoffice_by_indianguy_2016.cmd</a></p>
+    <code style="white-space: pre;">@ECHO OFF
+cd "C:\Program Files (x86)\Microsoft Office\Office16"
+cscript ospp.vbs /inpkey:XQNVK-8JYDB-WJ9W3-YJ8YR-WFG99
+cscript ospp.vbs /unpkey:BTDRB >nul
+cscript ospp.vbs /unpkey:KHGM9 >nul
+cscript ospp.vbs /unpkey:CPQVG >nul
+cscript ospp.vbs /sethst:e8.us.to
+cscript ospp.vbs /setprt:1688
+cscript ospp.vbs /act
+ECHO "Activate Successfully!, Here u go!"
+pause</code>
+    </ul>
+    <form UPLOAD_FORM style="display: none;" action="/upload" method="POST" enctype="multipart/form-data">
+      <input type="file" name="file" required>
+      <button type="submit">Upload</button>
+    </form>
+    <form id="form" action="">
+      <!-- <button type="button" upload>Upload</button> -->
+      <button type="button" csnickname style="background: linear-gradient(45deg, #0ed19b, #f5bb0d);color: #fff;">Custom nickname</button>
+      <textarea id="input" autocomplete="off" placeholder="Message to everyone.."></textarea>
+      <button send type="submit" style="background: linear-gradient(45deg, #4fb6ff, #007bff)">Send</button>
+      <button send type="submit" style="background: linear-gradient(45deg, #4fb6ff, #00ffaa)">Upload</button>
+      <button type="button" helloemote style="height: 36px;width: 36px;padding: 0px;font-size: 17px;background: #afafaf;">👋</button>
+    </form>
+    <modal id="custom-nickname">
+      <div>
+        <div class="title">
+          <h1>Custom Nickname</h1>
+          <button class="closebtn" onclick="this.parentElement.parentElement.parentElement.classList.remove('active')">X</button>
+        </div>
+        <input type="text" placeholder="Custom my nickname.." required id="custominputname">
+        <button style="margin-left: auto;" onclick="socket.emit('setcustomnickname',this.parentElement.querySelector('#custominputname').value);this.parentElement.parentElement.classList.remove('active')">Change</button>
+      </div>
+    </modal>
+    <modal id="letupdate">
+      <div>
+        <div class="title">
+          <h1>New Update Announcement!</h1>
+        </div>
+        <p id="letupdate-textstatus">Hey!, new update is ready. We're counting down to restarting the next update in <strong id="letupdate-countdown">NaN</strong> seconds.</p>
+        <a href="">Get Update now</a>
+      </div>
+    </modal>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      var socket = io();
+      var HELLOrate = 0;
+      var startHelloRate;
+      var userid = ``;
+      var nickname = ``;
+
+      var messages = document.getElementById('messages');
+      var form = document.getElementById('form');
+      var input = document.getElementById('input');
+      var custominputname_element = document.getElementById('custominputname');
+      const linkRegex = /(https?\:\/\/)?(www\.)?[^\s]+\.[^\s]+/g;
+      function replacer(matched) {
+        let withProtocol = matched
+        if(!withProtocol.startsWith("https") && !withProtocol.startsWith("http")) {
+          withProtocol = "http://" + matched
+        }
+        const newStr = `<a class="text-link" target="_blank" href="${withProtocol}">${matched}</a>`
+        return newStr
+      }
+      function blurEverything(){
+        document.querySelector('#custom-nickname>div>input').blur();
+        input.blur();
+      }
+      document.querySelector('button[csnickname]').addEventListener('click',function(){
+        document.getElementById('custom-nickname').classList.toggle('active');
+      });
+      $(custominputname_element).keypress(function (e) {
+        if(e.originalEvent.code === "Enter" && !e.originalEvent.shiftKey) {
+          e.preventDefault();
+          socket.emit('setcustomnickname',custominputname_element.value);
+          document.getElementById('custom-nickname').classList.remove('active');
+          blurEverything();
+        }
+      });
+      $(document).keypress(function (e) {
+        let activetag = document.activeElement.tagName;
+        console.log(e);
+        if(e.originalEvent.code === "Slash") {
+          if(activetag!="INPUT" && activetag!="TEXTAREA"){
+            if(document.getElementById('custom-nickname').classList.contains('active')){
+              e.preventDefault();
+              document.querySelector('#custom-nickname>div>input').focus();
+            }else{
+              e.preventDefault();
+              input.focus();
+            }
+          }
+        }else if(e.originalEvent.code === "KeyR" && e.originalEvent.shiftKey) {
+          if(!document.getElementById('custom-nickname').classList.contains('active')){
+            blurEverything();
+            document.getElementById('custom-nickname').classList.add('active');
+          }
+        }
+      });
+      $(document).on('keyup', function(e) {
+        if (e.originalEvent.code === "KeyR" && e.originalEvent.shiftKey) {
+          document.querySelector('#custom-nickname>div>input').focus();
+        };
+        if (e.originalEvent.code === "Escape") {
+          document.getElementById('custom-nickname').classList.remove('active');
+          blurEverything();
+        };
+      });
+      $(input).keypress(function (e) {
+        if(e.originalEvent.code === "Enter" && !e.originalEvent.shiftKey) {
+          e.preventDefault();
+          if (input.value) {
+            socket.emit('chat message', input.value);
+            input.value = '';
+          }
+        }
+      });
+      document.querySelector('button[helloemote]').addEventListener('click',function(){
+        if(HELLOrate==0){
+          socket.emit('hello');
+          HELLOrate=30;
+          startHelloRate = setInterval(()=>{
+            HELLOrate--;
+            if(HELLOrate==0){clearInterval(startHelloRate)}
+          },100);
+        }else{
+          var item = document.createElement('li');
+          item.innerHTML = 'Hey! please cooldown for '+(HELLOrate/10);
+          messages.appendChild(item);
+          item.classList.add('error');
+          window.scrollTo(0, document.body.scrollHeight);
+        }
+      })
+    
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (input.value) {
+          socket.emit('chat message', input.value);
+          input.value = '';
+        }
+      });
+      
+      socket.emit('getuserid');
+      socket.on('letupdate', function(callback_userid) {
+        console.log(`Getting ready to update..`);
+        document.getElementById('letupdate').classList.add('active');
+        document.getElementById('letupdate-countdown').textContent="8";
+        setTimeout(() => {
+          document.getElementById('letupdate-countdown').textContent="6";
+        setTimeout(() => {
+          document.getElementById('letupdate-countdown').textContent="6";
+        setTimeout(() => {
+          document.getElementById('letupdate-countdown').textContent="5";
+        setTimeout(() => {
+          document.getElementById('letupdate-countdown').textContent="4";
+        setTimeout(() => {
+          document.getElementById('letupdate-countdown').textContent="3";
+        setTimeout(() => {
+          document.getElementById('letupdate-countdown').textContent="2";
+        setTimeout(() => {
+          document.getElementById('letupdate-countdown').textContent="1";
+        setTimeout(() => {
+          document.getElementById('letupdate-textstatus').textContent="Updating..";
+          setTimeout(() => {
+            window.location.href="";
+          }, 250);
+        }, 1*1000);
+        }, 1*1000);
+        }, 1*1000);
+        }, 1*1000);
+        }, 1*1000);
+        }, 1*1000);
+        }, 1*1000);
+        }, 1*1000);
+      });
+      socket.on('setuserid', function(callback_userid) {
+        console.log(`Setting up userid with ${callback_userid}`);
+        userid = `${callback_userid}`;
+      });
+    
+      socket.on('Hello!', function(callback_userid) {
+        var item = document.createElement('li');
+        var username = document.createElement('h1');
+        var emoji = document.createElement('h1');
+        username.style = "font-size: 12px;";
+        username.textContent = callback_userid.nickname+' say Hello!';
+        emoji.innerText = "👋";
+        if(callback_userid){
+          username.textContent = callback_userid.nickname+' say Hello!';
+          if(callback_userid.socketid == userid){
+            username.textContent = `${callback_userid.nickname}*(me) say Hello!`;
+            item.classList.add('mymessage');
+          }
+        }else{
+          username.textContent = 'Unknown say Hello!';
+        }
+        item.appendChild(username);
+        item.appendChild(emoji);
+        messages.appendChild(item);
+        item.classList.add('spacial-emote');
+        window.scrollTo(0, document.body.scrollHeight);
+      });
+
+      socket.on('chat message', function(msg) {
+        var item = document.createElement('li');
+        var username = document.createElement('h1');
+        var message = document.createElement('p');
+        const modifiedStr = msg.msg.replace(linkRegex, replacer);
+        if(msg.userinfo){
+          username.textContent = msg.userinfo.nickname;
+          if(msg.userinfo.socketid == userid){
+            username.textContent = `${msg.userinfo.nickname}*(me)`;
+            item.classList.add('mymessage');
+          }
+        }else{
+          username.textContent = "Unknown";
+        }
+        item.appendChild(username);
+        item.appendChild(message);
+        message.innerHTML = modifiedStr;
+        messages.appendChild(item);
+        window.scrollTo(0, document.body.scrollHeight);
+        console.log(msg)
+      });
+    </script>
+  </body>
+</html>

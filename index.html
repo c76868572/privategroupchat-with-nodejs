@@ -151,10 +151,10 @@ pause</code>
     </form>
     <form id="form" action="">
       <!-- <button type="button" upload>Upload</button> -->
-      <button type="button" csnickname style="background: linear-gradient(45deg, #0ed19b, #f5bb0d);color: #fff;">Custom nickname</button>
+      <button send type="submit" style="background: linear-gradient(45deg, #4fb6ff, #00ffaa)" title="Upload">➕</button>
+      <button type="button" csnickname style="display:none;background: linear-gradient(45deg, #0ed19b, #f5bb0d);color: #fff;">Custom nickname</button>
       <textarea id="input" autocomplete="off" placeholder="Message to everyone.."></textarea>
       <button send type="submit" style="background: linear-gradient(45deg, #4fb6ff, #007bff)">Send</button>
-      <button send type="submit" style="background: linear-gradient(45deg, #4fb6ff, #00ffaa)">Upload</button>
       <button type="button" helloemote style="height: 36px;width: 36px;padding: 0px;font-size: 17px;background: #afafaf;">👋</button>
     </form>
     <modal id="custom-nickname">
@@ -216,16 +216,16 @@ pause</code>
         let activetag = document.activeElement.tagName;
         console.log(e);
         if(e.originalEvent.code === "Slash") {
-          if(activetag!="INPUT" && activetag!="TEXTAREA"){
-            if(document.getElementById('custom-nickname').classList.contains('active')){
-              e.preventDefault();
-              document.querySelector('#custom-nickname>div>input').focus();
-            }else{
-              e.preventDefault();
-              input.focus();
-            }
+          if(activetag==="INPUT" || activetag==="TEXTAREA") return;
+          if(document.getElementById('custom-nickname').classList.contains('active')){
+            e.preventDefault();
+            document.querySelector('#custom-nickname>div>input').focus();
+          }else{
+            e.preventDefault();
+            input.focus();
           }
         }else if(e.originalEvent.code === "KeyR" && e.originalEvent.shiftKey) {
+          if(activetag==="INPUT" || activetag==="TEXTAREA") return;
           if(!document.getElementById('custom-nickname').classList.contains('active')){
             blurEverything();
             document.getElementById('custom-nickname').classList.add('active');
@@ -233,19 +233,125 @@ pause</code>
         }
       });
       $(document).on('keyup', function(e) {
-        if (e.originalEvent.code === "KeyR" && e.originalEvent.shiftKey) {
-          document.querySelector('#custom-nickname>div>input').focus();
-        };
         if (e.originalEvent.code === "Escape") {
           document.getElementById('custom-nickname').classList.remove('active');
           blurEverything();
         };
+        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+        if (e.originalEvent.code === "KeyR" && e.originalEvent.shiftKey) {
+          document.querySelector('#custom-nickname>div>input').focus();
+        };
       });
+      function createLogCommandOnMessageBlock(string="", status=200) {
+        var item = document.createElement('li');
+        var username = document.createElement('h1');
+        var message = document.createElement('p');
+        const modifiedStr = string.replace(linkRegex, replacer);
+        username.textContent = "System:";
+        item.appendChild(username);
+        item.appendChild(message);
+        message.innerHTML = modifiedStr;
+        if (status === 200) {
+          item.style.backgroundColor = "#03d786";
+        } else {
+          item.style.backgroundColor = "#333";
+          item.style.color = "#fff";
+        }
+        messages.appendChild(item);
+        window.scrollTo(0, document.body.scrollHeight);
+      }
+      function getArguments(input) {
+        input = input.slice(1);
+        const args = input.split(" ");
+        const commandName = args.shift();
+        if (!commandName) {
+          return "nope :)";
+        }
+        const result = {
+          command: commandName,
+          arguments: {}
+        };
+        for (let i = 0; i < args.length; i += 2) {
+          const argName = args[i];
+          const argValue = args[i + 1];
+          if (!argName || !argValue) {
+            return "nope :)";
+          }
+          result.arguments[argName] = argValue;
+        }
+        return result;
+      }
+      function getFirstArgument(input) {
+        input = input.slice(1);
+        const args = input.split(" ");
+        const commandName = args.shift();
+        if (commandName !== "help") {
+          return "wrong args";
+        }
+        if (args.length === 0) {
+          return "nope :)";
+        }
+        return args[0];
+      }
       $(input).keypress(function (e) {
         if(e.originalEvent.code === "Enter" && !e.originalEvent.shiftKey) {
           e.preventDefault();
           if (input.value) {
-            socket.emit('chat message', input.value);
+            if (input.value.charAt(0) === '/') {
+              const command = input.value.slice(1).trim().split(" ")[0];
+              const arguments = getArguments(input.value).arguments;
+              console.log("Command:", command, arguments);
+              if (command.toLowerCase() === 'help' || command.toLowerCase() === 'hp') {
+                const getFistArg = getFirstArgument(input.value).toLowerCase();
+                if (getFistArg === "nope :)") {
+                  createLogCommandOnMessageBlock(`$ help
+TGBC commands, version 1.0.0(1)-release (x86_64-tgbc)
+These tgbc commands are defined internally.  Type \`help' to see this list.
+Type \`help name' to find out more about the function \`name'.
+
+A star (*) next to a name means that the command is disabled.
+
+ rename [-n]                        Custom your name in this group chat. [-n string]
+ rm [-n]                            Alice of rename command.`,200);
+                  return input.value = '';
+                }
+                if (getFistArg) {
+                  if (getFistArg === "rename" || getFistArg === "rm") {
+                    createLogCommandOnMessageBlock(`$ help rename
+Rename is command for custom name for yourself with any string
+The \`rm is alice of rename.
+
+Anyway you can use [-n string] argument for custom name without interface.
+e.g. /rename -n MyName`,200)
+                  } else {
+                    createLogCommandOnMessageBlock("Command not found, type /help for see all commands.",404)
+                  }
+                } else {
+                  createLogCommandOnMessageBlock("Bad request, wrong arguments.",400)
+                }
+              } else if (command.toLowerCase() === 'rename' || command.toLowerCase() === 'rm') {
+                if (JSON.stringify(arguments) === "{}") {
+                  document.getElementById('custom-nickname').classList.add('active');
+                  document.querySelector('#custom-nickname>div>input').focus();
+                  return input.value = '';
+                }
+                if (arguments) {
+                  if ( arguments['-n'] ) {
+                    socket.emit('setcustomnickname',arguments['-n']);
+                    createLogCommandOnMessageBlock(`Renamed to ${arguments['-n']}`,200)
+                  } else {
+                    createLogCommandOnMessageBlock("Bad request, wrong arguments.",400)
+                  }
+                } else {
+                  createLogCommandOnMessageBlock("Bad request, wrong arguments.",400)
+                }
+              } else {
+                createLogCommandOnMessageBlock("Command not found, type /help for more info.",404)
+                console.error('Command not found');
+              }
+            } else {
+              socket.emit('chat message', input.value);
+            }
             input.value = '';
           }
         }
